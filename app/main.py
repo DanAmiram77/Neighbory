@@ -61,10 +61,11 @@ def seed_safe_points():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # יצירת טבלאות
-    Base.metadata.create_all(bind=engine)
-    # זריעת נתונים ראשוניים
-    seed_safe_points()
+    try:
+        Base.metadata.create_all(bind=engine)
+        seed_safe_points()
+    except Exception as e:
+        print(f"⚠️ DB init error (will retry on first request): {e}")
     print(f"🚀 KidsTrade API פועל במצב {settings.ENVIRONMENT}")
     yield
     print("👋 השרת נכבה")
@@ -77,10 +78,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - בפרודקשן צריך להגביל לדומיינים הספציפיים של האפליקציה
+# CORS
+origins = ["*"] if settings.ENVIRONMENT == "development" else settings.ALLOWED_ORIGINS.split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.ENVIRONMENT == "development" else [],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
