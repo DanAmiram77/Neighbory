@@ -1,0 +1,31 @@
+databases:
+  - name: neighbory-db
+    databaseName: neighbory
+    user: neighbory
+    plan: free
+
+services:
+  - type: web
+    name: neighbory-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neighbory-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+
+  - type: web
+    name: neighbory-web
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: ./frontend
