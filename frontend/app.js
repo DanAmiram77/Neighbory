@@ -190,6 +190,10 @@ function renderHome() {
                 <span>© 2026 Neighbory</span>
                 <span>·</span>
                 <span>נבנה באהבה לילדים יזמים 💜</span>
+                <span>·</span>
+                <a href="/privacy.html" style="color:white;font-weight:600;">מדיניות פרטיות</a>
+                <span>·</span>
+                <a href="/terms.html" style="color:white;font-weight:600;">תנאי שימוש</a>
             </div>
         </footer>
     `;
