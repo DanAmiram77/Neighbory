@@ -46,6 +46,38 @@
             <button type="submit" class="btn btn-primary btn-full btn-large">בואו ניכנס! 🚀</button>
         </form>
         <div class="modal-switch">אין לכם חשבון? <a onclick="showRegister()">הצטרפו עכשיו</a></div>
+        <div class="modal-switch" style="margin-top:8px"><a onclick="showForgotPassword()">שכחתי סיסמה 🔑</a></div>
+    </div>
+</div>
+
+<div id="modal-forgot" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('modal-forgot')"></div>
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('modal-forgot')">×</button>
+        <div class="modal-emoji">🔑</div>
+        <h2 class="modal-title">שכחתם סיסמה?</h2>
+        <p class="modal-sub">הזינו את האימייל שלכם ונשלח קישור לאיפוס</p>
+        <form onsubmit="handleForgotPassword(event)">
+            <div class="field"><label>אימייל</label><input type="email" name="email" required placeholder="you@example.com"></div>
+            <div id="forgot-msg" class="error-msg"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-large">שלחו לי קישור 📧</button>
+        </form>
+        <div class="modal-switch"><a onclick="showLogin()">חזרה להתחברות</a></div>
+    </div>
+</div>
+
+<div id="modal-reset" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-emoji">🔐</div>
+        <h2 class="modal-title">בחרו סיסמה חדשה</h2>
+        <p class="modal-sub">הסיסמה חייבת להכיל לפחות 8 תווים</p>
+        <form onsubmit="handleResetPassword(event)">
+            <div class="field"><label>סיסמה חדשה</label><input type="password" name="password" required minlength="8" placeholder="לפחות 8 תווים"></div>
+            <div class="field"><label>אימות סיסמה</label><input type="password" name="password2" required minlength="8" placeholder="הזינו שוב"></div>
+            <div id="reset-msg" class="error-msg"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-large">עדכון סיסמה ✅</button>
+        </form>
     </div>
 </div>
 

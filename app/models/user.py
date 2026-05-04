@@ -28,6 +28,10 @@ class User(Base):
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     approval_code: Mapped[str] = mapped_column(String(10), nullable=True)
 
+    # איפוס סיסמה
+    password_reset_token: Mapped[str] = mapped_column(String(100), nullable=True)
+    password_reset_expires: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # יחסים (relationships)

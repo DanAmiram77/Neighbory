@@ -57,6 +57,41 @@ function switchTab(which) {
     document.getElementById(`tab-${which}`).classList.add('active');
 }
 
+function showForgotPassword() { closeAllModals(); document.getElementById('modal-forgot').classList.add('active'); document.body.style.overflow = 'hidden'; }
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    const msgEl = document.getElementById('forgot-msg');
+    msgEl.style.color = 'var(--ink-soft)';
+    msgEl.textContent = 'שולח...';
+    const email = e.target.email.value;
+    try {
+        await apiCall(`/auth/forgot-password?email=${encodeURIComponent(email)}`, { method: 'POST' });
+        msgEl.style.color = 'var(--green-dark)';
+        msgEl.textContent = '✓ אם האימייל קיים, ישלח קישור לאיפוס תוך כמה שניות.';
+        e.target.reset();
+    } catch (err) {
+        msgEl.style.color = 'var(--err)';
+        msgEl.textContent = err.message;
+    }
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const msgEl = document.getElementById('reset-msg');
+    const password = e.target.password.value;
+    const password2 = e.target.password2.value;
+    if (password !== password2) { msgEl.textContent = 'הסיסמאות אינן תואמות'; return; }
+    const token = new URLSearchParams(window.location.search).get('reset_token');
+    try {
+        await apiCall(`/auth/reset-password?token=${encodeURIComponent(token)}&new_password=${encodeURIComponent(password)}`, { method: 'POST' });
+        closeAllModals();
+        window.history.replaceState({}, '', '/');
+        toast('✓ הסיסמה עודכנה! אפשר להתחבר עכשיו.', 'success');
+        setTimeout(showLogin, 600);
+    } catch (err) { msgEl.textContent = err.message; }
+}
+
 // ----------------------------------------
 // Landing page
 // ----------------------------------------
@@ -489,4 +524,12 @@ function logout() {
 // ----------------------------------------
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
-renderHome();
+
+const resetToken = new URLSearchParams(window.location.search).get('reset_token');
+if (resetToken) {
+    renderHome();
+    document.getElementById('modal-reset').classList.add('active');
+    document.body.style.overflow = 'hidden';
+} else {
+    renderHome();
+}

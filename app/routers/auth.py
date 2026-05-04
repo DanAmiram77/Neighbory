@@ -1,6 +1,6 @@
 """נקודות קצה של אימות והרשמה"""
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -15,7 +15,7 @@ from app.core.security import (
     require_parent,
 )
 from app.models.user import User
-from app.core.email import send_parent_approval_email
+from app.core.email import send_parent_approval_email, send_password_reset_email
 from app.schemas.user import (
     ChildRegister,
     ParentRegister,
@@ -163,3 +163,43 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 @router.get("/me", response_model=UserPrivate)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/forgot-password")
+def forgot_password(email: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "אם האימייל קיים, ישלח קישור לאיפוס סיסמה."}
+
+    token = secrets.token_urlsafe(32)
+    user.password_reset_token = token
+    user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    db.commit()
+
+    send_password_reset_email(
+        to_email=user.email,
+        full_name=user.full_name,
+        reset_token=token,
+    )
+    return {"message": "אם האימייל קיים, ישלח קישור לאיפוס סיסמה."}
+
+
+@router.post("/reset-password")
+def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
+    if len(new_password) < 8:
+        raise HTTPException(400, "הסיסמה חייבת להכיל לפחות 8 תווים")
+
+    user = db.query(User).filter(User.password_reset_token == token).first()
+    if not user or not user.password_reset_expires:
+        raise HTTPException(400, "קישור לא תקין")
+
+    if datetime.now(timezone.utc) > user.password_reset_expires.replace(tzinfo=timezone.utc):
+        raise HTTPException(400, "הקישור פג תוקף. בקשו קישור חדש.")
+
+    user.hashed_password = hash_password(new_password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    db.commit()
+
+    return {"message": "הסיסמה עודכנה בהצלחה"}
