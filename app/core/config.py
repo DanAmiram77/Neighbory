@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # CORS - איזה דומיינים רשאים לפנות ל-API
     ALLOWED_ORIGINS: str = "*"  # ב-development. בפרודקשן - הדומיין של ה-frontend
 
+    # Resend email
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+
     # חוקי האפליקציה
     MIN_AGE: int = 13
     MAX_AGE: int = 18

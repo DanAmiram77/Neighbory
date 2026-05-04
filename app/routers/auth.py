@@ -15,6 +15,7 @@ from app.core.security import (
     require_parent,
 )
 from app.models.user import User
+from app.core.email import send_parent_approval_email
 from app.schemas.user import (
     ChildRegister,
     ParentRegister,
@@ -95,7 +96,12 @@ def register_child(data: ChildRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(child)
 
-    # TODO: שלח SMS + אימייל להורה עם הקוד (Twilio + SendGrid)
+    send_parent_approval_email(
+        parent_email=parent.email,
+        child_name=child.full_name,
+        child_username=child.username,
+        approval_code=approval_code,
+    )
     return {
         "message": "הרשמה הצליחה. ההורה צריך לאשר את החשבון.",
         "child_id": child.id,
