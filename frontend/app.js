@@ -1,21 +1,9 @@
-// ========================================
-// Neighbory Frontend - App Logic
-// ========================================
-
-// Read API URL from config.js (loaded before this script in index.html)
 const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'http://localhost:8000';
 
-// ----------------------------------------
-// Storage helpers (in-memory only, per session)
-// ----------------------------------------
-
-const session = {
-    token: null,
-    user: null,
-};
+const session = { token: null, user: null };
 
 // ----------------------------------------
-// API Helpers
+// API Helper
 // ----------------------------------------
 
 async function apiCall(path, options = {}) {
@@ -28,59 +16,18 @@ async function apiCall(path, options = {}) {
         },
         ...options,
     };
-
     if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData) && !(opts.body instanceof URLSearchParams)) {
         opts.body = JSON.stringify(opts.body);
     }
-
     try {
         const res = await fetch(API_URL + path, opts);
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            throw new Error(data.detail || `שגיאה (${res.status})`);
-        }
+        if (!res.ok) throw new Error(data.detail || `שגיאה (${res.status})`);
         return data;
     } catch (err) {
-        if (err.message === 'Failed to fetch') {
-            throw new Error('לא ניתן להתחבר לשרת. ודאו שה-Backend רץ על ' + API_URL);
-        }
+        if (err.message === 'Failed to fetch') throw new Error('לא ניתן להתחבר לשרת.');
         throw err;
     }
-}
-
-// ----------------------------------------
-// Modal Management
-// ----------------------------------------
-
-function showLogin() {
-    closeAllModals();
-    document.getElementById('modal-login').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function showRegister() {
-    closeAllModals();
-    document.getElementById('modal-register').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function closeAllModals() {
-    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-    document.body.style.overflow = '';
-}
-
-function switchTab(which) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-    const tabs = document.querySelectorAll('.tab');
-    tabs[which === 'child' ? 0 : 1].classList.add('active');
-    document.getElementById(`tab-${which}`).classList.add('active');
 }
 
 // ----------------------------------------
@@ -91,90 +38,187 @@ function toast(msg, type = 'success') {
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.className = `toast show ${type}`;
-    setTimeout(() => el.classList.remove('show'), 4000);
+    setTimeout(() => el.classList.remove('show'), 4500);
 }
 
 // ----------------------------------------
-// Form handlers
+// Modal Management
+// ----------------------------------------
+
+function showLogin() { closeAllModals(); document.getElementById('modal-login').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function showRegister() { closeAllModals(); document.getElementById('modal-register').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; }
+function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); document.body.style.overflow = ''; }
+
+function switchTab(which) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab')[which === 'child' ? 0 : 1].classList.add('active');
+    document.getElementById(`tab-${which}`).classList.add('active');
+}
+
+// ----------------------------------------
+// Landing page
+// ----------------------------------------
+
+function goHome() {
+    if (session.user) { renderDashboard(); return; }
+    renderHome();
+}
+
+function renderHome() {
+    document.getElementById('nav-actions').innerHTML = `
+        <button class="btn btn-secondary" onclick="showLogin()">כניסה</button>
+        <button class="btn btn-primary" onclick="showRegister()">הצטרפו 🚀</button>
+    `;
+    document.getElementById('main-content').innerHTML = `
+        <section id="landing" class="landing">
+            <div class="landing-content">
+                <span class="tag"><span class="tag-emoji">⚡</span>הקהילה הכי בטוחה לבני 13-18</span>
+                <h1 class="hero-title">
+                    <span class="wiggle">החנות</span> הראשונה<br>
+                    <span class="accent-1">שלך</span> מתחילה <span class="accent-2">כאן</span>
+                </h1>
+                <p class="hero-sub">פותחים חנות, מוכרים דברים שלא צריכים יותר, ומרוויחים כסף משלכם — בסביבה בטוחה עם פיקוח של ההורים. כי ילדים יכולים להיות יזמים! 💪</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-large" onclick="showRegister()">בואו נתחיל! 🎉</button>
+                    <button class="btn btn-secondary btn-large" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">איך זה עובד? 🤔</button>
+                </div>
+                <div class="hero-emojis">
+                    <span>🎮</span><span>📚</span><span>⚽</span><span>🎨</span>
+                </div>
+            </div>
+            <div class="landing-visual">
+                <span class="sticker sticker-1">⭐</span>
+                <span class="sticker sticker-2">✨</span>
+                <div class="product-card-floating pcf-1">
+                    <div class="pcf-img" style="background:linear-gradient(135deg,#FECACA,#F87171);">🎮</div>
+                    <div class="pcf-body">
+                        <div class="pcf-title">פלייסטיישן משחק</div>
+                        <div class="pcf-meta"><span class="pcf-price">120₪</span><span class="pcf-chip">כמו חדש</span></div>
+                    </div>
+                </div>
+                <div class="product-card-floating pcf-2">
+                    <div class="pcf-img" style="background:linear-gradient(135deg,#A7F3D0,#34D399);">📚</div>
+                    <div class="pcf-body">
+                        <div class="pcf-title">ספרי הארי פוטר</div>
+                        <div class="pcf-meta"><span class="pcf-price">80₪</span><span class="pcf-chip">משומש</span></div>
+                    </div>
+                </div>
+                <div class="product-card-floating pcf-3">
+                    <div class="pcf-img" style="background:linear-gradient(135deg,#FDE68A,#FBBF24);">⚽</div>
+                    <div class="pcf-body">
+                        <div class="pcf-title">כדורגל חדש</div>
+                        <div class="pcf-meta"><span class="pcf-price">45₪</span><span class="pcf-chip">חדש</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="section-header">
+                <span class="tag"><span class="tag-emoji">🎯</span>איך זה עובד</span>
+                <h2>פשוט. כיף. שלכם.</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature"><div class="feature-emoji">👋</div><h3>מתחילים עם הורה</h3><p>נרשמים, ההורה מאשר במייל, ויוצאים לדרך. שלושים שניות והכל מוכן!</p></div>
+                <div class="feature"><div class="feature-emoji">🏪</div><h3>פותחים חנות שווה</h3><p>תנו לחנות שם מגניב, תיאור קצר, ואתם מוכנים להעלות מוצרים!</p></div>
+                <div class="feature"><div class="feature-emoji">🛡️</div><h3>נפגשים בבטחה</h3><p>רק במקומות בטוחים — ספריות, מרכזים קהילתיים, ומקומות ציבוריים.</p></div>
+                <div class="feature"><div class="feature-emoji">⭐</div><h3>בונים מוניטין</h3><p>כל עסקה מדורגת — אתם בונים שם טוב בקהילה ומרוויחים יותר אמון!</p></div>
+            </div>
+        </section>
+
+        <section class="safety">
+            <div class="safety-content">
+                <span class="tag" style="background:var(--white);color:var(--purple-dark);border-color:var(--ink)"><span class="tag-emoji">🛡️</span>בטיחות מעל הכל</span>
+                <h2>אתם מוגנים. ההורים שקטים.</h2>
+                <div class="safety-list">
+                    <div class="safety-item"><div class="check">✓</div><span>כל מוצר עובר אישור הורה</span></div>
+                    <div class="safety-item"><div class="check">✓</div><span>הודעות רק מתבניות מוכנות</span></div>
+                    <div class="safety-item"><div class="check">✓</div><span>מפגשים רק במקומות בטוחים</span></div>
+                    <div class="safety-item"><div class="check">✓</div><span>מחיר מקסימום: 500₪</span></div>
+                    <div class="safety-item"><div class="check">✓</div><span>אין מוצרים מסוכנים</span></div>
+                    <div class="safety-item"><div class="check">✓</div><span>הורים רואים הכל</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="cta-emoji">🚀</div>
+            <h2>מוכנים לפתוח חנות?</h2>
+            <p>חינם תמיד! עסקאות קטנות בלי עמלה. רק כיף.</p>
+            <button class="btn btn-pink btn-large" onclick="showRegister()">בואו נתחיל! 💫</button>
+        </section>
+
+        <footer>
+            <div class="footer-content">
+                <span>© 2026 Neighbory</span>
+                <span>·</span>
+                <span>נבנה באהבה לילדים יזמים 💜</span>
+            </div>
+        </footer>
+    `;
+}
+
+// ----------------------------------------
+// Form helpers
 // ----------------------------------------
 
 function formToObject(form) {
     const data = {};
-    new FormData(form).forEach((value, key) => {
-        data[key] = key === 'age' ? parseInt(value, 10) : value;
-    });
+    new FormData(form).forEach((value, key) => { data[key] = key === 'age' ? parseInt(value, 10) : value; });
     return data;
 }
+
+function esc(s) {
+    return String(s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ----------------------------------------
+// Auth handlers
+// ----------------------------------------
 
 async function handleLogin(e) {
     e.preventDefault();
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
-
     const data = formToObject(e.target);
     const body = new URLSearchParams();
     body.append('username', data.email);
     body.append('password', data.password);
-
     try {
-        const res = await apiCall('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body,
-        });
-
+        const res = await apiCall('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
         session.token = res.access_token;
         session.user = res.user;
         closeAllModals();
-        toast(`ברוכים השבים, ${res.user.full_name}!`);
+        toast(`👋 ברוכים השבים, ${res.user.full_name}!`);
         renderDashboard();
-    } catch (err) {
-        errEl.textContent = err.message;
-    }
+    } catch (err) { errEl.textContent = err.message; }
 }
 
 async function handleChildRegister(e) {
     e.preventDefault();
     const errEl = document.getElementById('register-child-error');
     errEl.textContent = '';
-
     const data = formToObject(e.target);
-
     try {
-        const res = await apiCall('/auth/register/child', {
-            method: 'POST',
-            body: data,
-        });
-
+        const res = await apiCall('/auth/register/child', { method: 'POST', body: data });
         closeAllModals();
-        toast(
-            `✓ ההרשמה הצליחה! ההורה יקבל קוד אישור. (במצב פיתוח: ${res.approval_code_for_testing})`,
-            'success'
-        );
-    } catch (err) {
-        errEl.textContent = err.message;
-    }
+        toast(`🎯 ההרשמה הצליחה! קוד אישור להורה: ${res.approval_code_for_testing}`, 'success');
+    } catch (err) { errEl.textContent = err.message; }
 }
 
 async function handleParentRegister(e) {
     e.preventDefault();
     const errEl = document.getElementById('register-parent-error');
     errEl.textContent = '';
-
     const data = formToObject(e.target);
-
     try {
-        await apiCall('/auth/register/parent', {
-            method: 'POST',
-            body: data,
-        });
-
+        await apiCall('/auth/register/parent', { method: 'POST', body: data });
         closeAllModals();
-        toast('✓ נרשמתם בהצלחה! אפשר להתחבר עכשיו.');
+        toast('🎉 נרשמתם בהצלחה! אפשר להתחבר עכשיו.');
         setTimeout(showLogin, 500);
-    } catch (err) {
-        errEl.textContent = err.message;
-    }
+    } catch (err) { errEl.textContent = err.message; }
 }
 
 // ----------------------------------------
@@ -183,180 +227,117 @@ async function handleParentRegister(e) {
 
 function renderDashboard() {
     const isParent = session.user.role === 'parent';
-
-    document.body.innerHTML = `
-        <div class="grid-bg"></div>
-        <nav class="nav">
-            <div class="nav-logo">
-                <div class="logo-mark">
-                    <svg viewBox="0 0 40 40" width="32" height="32">
-                        <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                        <path d="M 12 20 L 18 26 L 28 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <span class="logo-text">KidsTrade</span>
-            </div>
-            <div class="nav-actions">
-                <span style="color: var(--ink-500); font-size: 14px; margin-left: 12px;">
-                    ${session.user.full_name} · ${isParent ? 'הורה' : 'ילד/ה'}
-                </span>
-                <button class="btn-ghost" onclick="logout()">יציאה</button>
-            </div>
-        </nav>
-        <div class="dashboard" id="dashboard-main"></div>
-        <div id="toast" class="toast"></div>
+    document.getElementById('nav-actions').innerHTML = `
+        <span class="user-pill">${isParent ? '👨‍👩‍👧' : '🎒'} ${esc(session.user.full_name)}</span>
+        <button class="btn btn-secondary" onclick="logout()">יציאה 👋</button>
     `;
-
-    if (isParent) {
-        renderParentDashboard();
-    } else {
-        renderChildDashboard();
-    }
+    if (isParent) renderParentDashboard();
+    else renderChildDashboard();
 }
 
 async function renderChildDashboard() {
-    const main = document.getElementById('dashboard-main');
-    main.innerHTML = `
-        <div class="dashboard-header">
-            <div class="dashboard-title">
-                <h1>החנות שלי</h1>
-                <p>נהלו את המוצרים שלכם ועקבו אחרי ההתעניינות</p>
-            </div>
-            <button class="btn-primary" onclick="showCreateProduct()">+ העלאת מוצר</button>
-        </div>
-        <div id="store-content">
-            <div style="text-align: center; padding: 40px; color: var(--ink-500);">טוען...</div>
-        </div>
-    `;
+    const main = document.getElementById('main-content');
+    main.innerHTML = `<div class="dashboard"><div style="text-align:center;padding:60px;font-size:40px;">⏳</div></div>`;
 
     try {
-        // Check if store exists
         let store;
-        try {
-            store = await apiCall('/stores/me');
-        } catch (err) {
-            // No store yet - show create store
-            main.querySelector('#store-content').innerHTML = `
-                <div class="empty-state">
-                    <h3>פתחו את החנות הראשונה שלכם</h3>
-                    <p>פשוט תנו לה שם ותיאור, ותוכלו להתחיל למכור.</p>
-                    <button class="btn-primary btn-large" onclick="showCreateStore()">פתיחת חנות</button>
+        try { store = await apiCall('/stores/me'); } catch (_) { store = null; }
+
+        if (!store) {
+            main.innerHTML = `<div class="dashboard">
+                <div class="dashboard-header">
+                    <div class="dashboard-title"><h1>🏪 החנות שלי</h1><p>היי ${esc(session.user.full_name)}, מה נמכור היום?</p></div>
                 </div>
-            `;
+                <div class="empty-state">
+                    <div class="empty-state-emoji">🚀</div>
+                    <h3>בואו נפתח חנות יחד!</h3>
+                    <p>תנו לה שם מגניב ותתחילו למכור</p>
+                    <button class="btn btn-primary btn-large" onclick="showCreateStore()">פתיחת חנות 🎉</button>
+                </div>
+            </div>`;
             return;
         }
 
-        // Load products
-        const pendingPromise = apiCall(`/products/?limit=50`).catch(() => []);
-        const allProducts = await pendingPromise;
+        const allProducts = await apiCall('/products/?limit=50').catch(() => []);
+        const myProducts = allProducts.filter(p => p.store_id === store.id);
+        const others = allProducts.filter(p => p.store_id !== store.id);
 
-        // We only got active products; for pending, query all by my store
-        // In our MVP backend, there is no "my products" endpoint, so we display active ones
-        const myActive = allProducts.filter(p => p.store_id === store.id);
-
-        main.querySelector('#store-content').innerHTML = `
-            <div style="background: var(--white); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--ink-100); margin-bottom: 28px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        let html = `<div class="dashboard">
+            <div class="dashboard-header">
+                <div class="dashboard-title"><h1>🏪 החנות שלי</h1><p>היי ${esc(session.user.full_name)}, מה נמכור היום?</p></div>
+                <button class="btn btn-pink btn-large" onclick="showCreateProduct()">➕ מוצר חדש</button>
+            </div>
+            <div class="store-info">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
                     <div>
-                        <h2 style="font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 4px;">${store.name}</h2>
-                        <p style="color: var(--ink-500); font-size: 14px;">${store.description || 'אין תיאור'}</p>
+                        <h2 style="font-family:var(--font-display);font-size:28px;font-weight:700;margin-bottom:4px">${esc(store.name)}</h2>
+                        <p style="color:var(--ink-soft);font-size:15px;font-weight:500">${esc(store.description || 'בלי תיאור עדיין')}</p>
                     </div>
-                    <div style="display: flex; gap: 24px; text-align: center;">
-                        <div>
-                            <div style="font-family: var(--font-display); font-weight: 800; font-size: 22px;">${store.total_sales}</div>
-                            <div style="font-size: 12px; color: var(--ink-500);">עסקאות</div>
+                    <div style="display:flex;gap:20px;text-align:center">
+                        <div style="background:var(--yellow-light);padding:14px 18px;border-radius:var(--r-sm);border:3px solid var(--ink)">
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:26px">${store.total_sales}</div>
+                            <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:2px">עסקאות</div>
                         </div>
-                        <div>
-                            <div style="font-family: var(--font-display); font-weight: 800; font-size: 22px;">${store.rating.toFixed(1)} ★</div>
-                            <div style="font-size: 12px; color: var(--ink-500);">דירוג</div>
+                        <div style="background:var(--pink-light);padding:14px 18px;border-radius:var(--r-sm);border:3px solid var(--ink)">
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:26px">⭐ ${store.rating.toFixed(1)}</div>
+                            <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:2px">דירוג</div>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="section-title">📦 המוצרים שלי</div>
+            <div class="dashboard-grid">`;
 
-            <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 16px;">המוצרים שלי</h3>
-            <div class="dashboard-grid" id="products-grid"></div>
-        `;
-
-        const grid = document.getElementById('products-grid');
-        if (myActive.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <h3>עדיין אין מוצרים</h3>
-                    <p>המוצרים שתעלו יופיעו כאן לאחר אישור הורה</p>
-                    <button class="btn-primary" onclick="showCreateProduct()">+ העלאת מוצר ראשון</button>
-                </div>
-            `;
+        if (myProducts.length === 0) {
+            html += `<div class="empty-state"><div class="empty-state-emoji">📦</div><h3>בואו נעלה מוצר ראשון!</h3><p>ההורה יאשר וזה יופיע בשוק</p><button class="btn btn-primary btn-large" onclick="showCreateProduct()">➕ העלאת מוצר</button></div>`;
         } else {
-            grid.innerHTML = myActive.map(p => productCardHTML(p)).join('');
+            html += myProducts.map(p => productCardHTML(p)).join('');
         }
 
-        // Also show marketplace
-        main.innerHTML += `
-            <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 18px; margin: 40px 0 16px;">מוצרים באזור שלכם</h3>
-            <div class="dashboard-grid" id="marketplace-grid"></div>
-        `;
-        const others = allProducts.filter(p => p.store_id !== store.id);
-        const mpGrid = document.getElementById('marketplace-grid');
+        html += `</div><div class="section-title" style="margin-top:40px">🔍 מוצרים באזור</div><div class="dashboard-grid">`;
+
         if (others.length === 0) {
-            mpGrid.innerHTML = `<div class="empty-state"><p>עדיין אין מוצרים של משתמשים אחרים</p></div>`;
+            html += `<div class="empty-state"><div class="empty-state-emoji">🛍️</div><p>עדיין אין מוצרים של אחרים בשוק</p></div>`;
         } else {
-            mpGrid.innerHTML = others.map(p => productCardHTML(p)).join('');
+            html += others.map(p => productCardHTML(p)).join('');
         }
-    } catch (err) {
-        toast(err.message, 'error');
-    }
+        html += `</div></div>`;
+        main.innerHTML = html;
+    } catch (err) { toast(err.message, 'error'); }
 }
 
 async function renderParentDashboard() {
-    const main = document.getElementById('dashboard-main');
-    main.innerHTML = `
-        <div class="dashboard-header">
-            <div class="dashboard-title">
-                <h1>לוח בקרה הורי</h1>
-                <p>מוצרים שממתינים לאישור שלכם</p>
-            </div>
-        </div>
-        <div id="pending-products">
-            <div style="text-align: center; padding: 40px; color: var(--ink-500);">טוען...</div>
-        </div>
-    `;
+    const main = document.getElementById('main-content');
+    main.innerHTML = `<div class="dashboard"><div style="text-align:center;padding:60px;font-size:40px;">⏳</div></div>`;
 
     try {
         const pending = await apiCall('/products/pending-approval');
-        const container = document.getElementById('pending-products');
+        let html = `<div class="dashboard">
+            <div class="dashboard-header">
+                <div class="dashboard-title"><h1>👨‍👩‍👧 לוח הבקרה שלכם</h1><p>אישור פעילות ילדיכם בקליק</p></div>
+            </div>
+            <div class="section-title">📦 מוצרים שמחכים לאישור</div>`;
 
         if (pending.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>אין מוצרים הממתינים לאישור</h3>
-                    <p>כאשר ילדכם יעלה מוצר, הוא יופיע כאן לאישורכם</p>
-                </div>
-            `;
+            html += `<div class="empty-state"><div class="empty-state-emoji">🎉</div><h3>הכל בשליטה!</h3><p>אין מוצרים שמחכים לאישור עכשיו</p></div>`;
         } else {
-            container.innerHTML = `<div class="dashboard-grid">
-                ${pending.map(p => `
-                    <div class="product-card">
-                        <div class="product-img">${categoryIcon(p.category)}</div>
-                        <div class="product-info">
-                            <div class="product-title">${escape(p.title)}</div>
-                            <div style="color: var(--ink-500); font-size: 13px; margin-bottom: 12px; line-height: 1.5;">${escape(p.description.substring(0, 100))}${p.description.length > 100 ? '...' : ''}</div>
-                            <div class="product-meta">
-                                <span class="product-price">${p.price}₪</span>
-                                <span class="status-badge status-pending">ממתין לאישור</span>
-                            </div>
-                            <div style="display: flex; gap: 8px; margin-top: 16px;">
-                                <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 13px;" onclick="approveProduct(${p.id})">✓ אישור</button>
-                                <button class="btn-ghost" style="flex: 1; padding: 10px; font-size: 13px;" onclick="rejectProduct(${p.id})">דחייה</button>
-                            </div>
+            html += `<div class="dashboard-grid">` + pending.map(p => `
+                <div class="product-card">
+                    <div class="product-img">${categoryIcon(p.category)}</div>
+                    <div class="product-info">
+                        <div class="product-title">${esc(p.title)}</div>
+                        <div style="color:var(--ink-soft);font-size:13px;margin-bottom:12px;line-height:1.5;font-weight:500">${esc(p.description.substring(0, 90))}${p.description.length > 90 ? '...' : ''}</div>
+                        <div class="product-meta"><span class="product-price">${p.price}₪</span><span class="status-badge status-pending">⏳ ממתין</span></div>
+                        <div style="display:flex;gap:8px;margin-top:14px">
+                            <button class="btn btn-primary" style="flex:1;padding:10px;font-size:13px" onclick="approveProduct(${p.id})">✓ אישור</button>
+                            <button class="btn btn-secondary" style="flex:1;padding:10px;font-size:13px" onclick="rejectProduct(${p.id})">דחייה</button>
                         </div>
                     </div>
-                `).join('')}
-            </div>`;
+                </div>`).join('') + `</div>`;
         }
-    } catch (err) {
-        toast(err.message, 'error');
-    }
+        html += `</div>`;
+        main.innerHTML = html;
+    } catch (err) { toast(err.message, 'error'); }
 }
 
 // ----------------------------------------
@@ -364,59 +345,35 @@ async function renderParentDashboard() {
 // ----------------------------------------
 
 function categoryIcon(cat) {
-    const map = {
-        toys: '🧸', books: '📚', games: '🎮', clothes: '👕',
-        sports: '⚽', collectibles: '🎴', electronics: '🎧',
-        handmade: '🎨', other: '📦'
-    };
-    return map[cat] || '📦';
-}
-
-function escape(s) {
-    return String(s || '').replace(/[<>&"']/g, c =>
-        ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+    return ({toys:'🧸',books:'📚',games:'🎮',clothes:'👕',sports:'⚽',collectibles:'🎴',electronics:'🎧',handmade:'🎨',other:'📦'})[cat] || '📦';
 }
 
 function productCardHTML(p) {
-    return `
-        <div class="product-card">
-            <div class="product-img">${categoryIcon(p.category)}</div>
-            <div class="product-info">
-                <div class="product-title">${escape(p.title)}</div>
-                <div class="product-meta">
-                    <span class="product-price">${p.price}₪</span>
-                    <span class="status-badge status-${p.status === 'active' ? 'active' : 'pending'}">
-                        ${p.status === 'active' ? 'פעיל' : 'ממתין'}
-                    </span>
-                </div>
+    return `<div class="product-card">
+        <div class="product-img">${categoryIcon(p.category)}</div>
+        <div class="product-info">
+            <div class="product-title">${esc(p.title)}</div>
+            <div class="product-meta">
+                <span class="product-price">${p.price}₪</span>
+                <span class="status-badge status-${p.status === 'active' ? 'active' : 'pending'}">${p.status === 'active' ? '✓ פעיל' : '⏳ ממתין'}</span>
             </div>
         </div>
-    `;
+    </div>`;
 }
 
 async function approveProduct(id) {
-    try {
-        await apiCall(`/products/${id}/approve`, { method: 'POST' });
-        toast('המוצר אושר');
-        renderParentDashboard();
-    } catch (err) {
-        toast(err.message, 'error');
-    }
+    try { await apiCall(`/products/${id}/approve`, { method: 'POST' }); toast('✓ המוצר אושר ונכנס לשוק'); renderParentDashboard(); }
+    catch (err) { toast(err.message, 'error'); }
 }
 
 async function rejectProduct(id) {
     if (!confirm('בטוחים שאתם רוצים לדחות את המוצר?')) return;
-    try {
-        await apiCall(`/products/${id}/reject`, { method: 'POST' });
-        toast('המוצר נדחה');
-        renderParentDashboard();
-    } catch (err) {
-        toast(err.message, 'error');
-    }
+    try { await apiCall(`/products/${id}/reject`, { method: 'POST' }); toast('המוצר נדחה'); renderParentDashboard(); }
+    catch (err) { toast(err.message, 'error'); }
 }
 
 // ----------------------------------------
-// Create store / product modals
+// Create store / product
 // ----------------------------------------
 
 function showCreateStore() {
@@ -427,46 +384,32 @@ function showCreateStore() {
         <div class="modal-backdrop" onclick="document.getElementById('modal-store').remove()"></div>
         <div class="modal-content">
             <button class="modal-close" onclick="document.getElementById('modal-store').remove()">×</button>
-            <h2 class="modal-title">פתיחת חנות</h2>
-            <p class="modal-sub">תנו לחנות שלכם שם ותיאור</p>
+            <div class="modal-emoji">🏪</div>
+            <h2 class="modal-title">פותחים חנות!</h2>
+            <p class="modal-sub">תנו לחנות שלכם שם מגניב ותיאור</p>
             <form onsubmit="handleCreateStore(event)">
-                <div class="field">
-                    <label>שם החנות</label>
-                    <input type="text" name="name" required minlength="2" placeholder="לדוגמה: משחקים של דני">
-                </div>
-                <div class="field">
-                    <label>תיאור קצר</label>
-                    <input type="text" name="description" placeholder="מה תמכרו? לאיזה גילאים?">
-                </div>
-                <div class="field-row">
-                    <div class="field">
-                        <label>רדיוס משלוח (ק"מ)</label>
-                        <input type="number" name="delivery_radius_km" value="5" min="1" max="50">
-                    </div>
-                </div>
+                <div class="field"><label>שם החנות</label><input type="text" name="name" required minlength="2" placeholder="לדוגמה: החנות של דני"></div>
+                <div class="field"><label>תיאור קצר</label><input type="text" name="description" placeholder="מה תמכרו?"></div>
+                <div class="field"><label>רדיוס משלוח (ק"מ)</label><input type="number" name="delivery_radius_km" value="5" min="1" max="50"></div>
                 <div class="error-msg" id="store-error"></div>
-                <button type="submit" class="btn-primary btn-full">פתיחת חנות</button>
+                <button type="submit" class="btn btn-primary btn-full btn-large">פותחים חנות! 🎉</button>
             </form>
-        </div>
-    `;
+        </div>`;
     document.body.appendChild(modal);
 }
 
 async function handleCreateStore(e) {
     e.preventDefault();
     const data = formToObject(e.target);
-    data.latitude = 32.0853;   // ברירת מחדל - בפועל נשתמש ב-geolocation
+    data.latitude = 32.0853;
     data.longitude = 34.7818;
     data.delivery_radius_km = parseInt(data.delivery_radius_km, 10) || 5;
-
     try {
         await apiCall('/stores/', { method: 'POST', body: data });
         document.getElementById('modal-store').remove();
-        toast('החנות נפתחה! עכשיו אפשר להעלות מוצרים');
+        toast('🎉 החנות נפתחה! עכשיו אפשר להעלות מוצרים');
         renderChildDashboard();
-    } catch (err) {
-        document.getElementById('store-error').textContent = err.message;
-    }
+    } catch (err) { document.getElementById('store-error').textContent = err.message; }
 }
 
 function showCreateProduct() {
@@ -477,26 +420,17 @@ function showCreateProduct() {
         <div class="modal-backdrop" onclick="document.getElementById('modal-product').remove()"></div>
         <div class="modal-content">
             <button class="modal-close" onclick="document.getElementById('modal-product').remove()">×</button>
-            <h2 class="modal-title">העלאת מוצר</h2>
+            <div class="modal-emoji">📦</div>
+            <h2 class="modal-title">מעלים מוצר חדש!</h2>
             <p class="modal-sub">המוצר יפורסם רק לאחר אישור הורה</p>
             <form onsubmit="handleCreateProduct(event)">
-                <div class="field">
-                    <label>כותרת</label>
-                    <input type="text" name="title" required minlength="3" placeholder="לדוגמה: משחק קטאן במצב מעולה">
-                </div>
-                <div class="field">
-                    <label>תיאור</label>
-                    <input type="text" name="description" required minlength="10" placeholder="תיאור מפורט של המוצר, מצב, כולל מה">
-                </div>
+                <div class="field"><label>כותרת</label><input type="text" name="title" required minlength="3" placeholder="לדוגמה: משחק קטאן במצב מעולה"></div>
+                <div class="field"><label>תיאור</label><input type="text" name="description" required minlength="10" placeholder="תיאור מפורט של המוצר"></div>
                 <div class="field-row">
-                    <div class="field">
-                        <label>מחיר (₪)</label>
-                        <input type="number" name="price" required min="1" max="500" placeholder="80">
-                    </div>
-                    <div class="field">
-                        <label>קטגוריה</label>
-                        <select name="category" required style="width: 100%; padding: 12px 16px; font-size: 15px; border: 1.5px solid var(--ink-100); border-radius: var(--radius-md); background: var(--white);">
-                            <option value="">בחרו קטגוריה</option>
+                    <div class="field"><label>מחיר (₪)</label><input type="number" name="price" required min="1" max="500" placeholder="80"></div>
+                    <div class="field"><label>קטגוריה</label>
+                        <select name="category" required>
+                            <option value="">בחרו</option>
                             <option value="toys">🧸 צעצועים</option>
                             <option value="books">📚 ספרים</option>
                             <option value="games">🎮 משחקים</option>
@@ -509,20 +443,18 @@ function showCreateProduct() {
                         </select>
                     </div>
                 </div>
-                <div class="field">
-                    <label>מצב המוצר</label>
-                    <select name="condition" required style="width: 100%; padding: 12px 16px; font-size: 15px; border: 1.5px solid var(--ink-100); border-radius: var(--radius-md); background: var(--white);">
-                        <option value="">בחרו מצב</option>
-                        <option value="new">חדש באריזה</option>
-                        <option value="like_new">כמו חדש</option>
-                        <option value="used">משומש</option>
+                <div class="field"><label>מצב</label>
+                    <select name="condition" required>
+                        <option value="">בחרו</option>
+                        <option value="new">✨ חדש באריזה</option>
+                        <option value="like_new">⭐ כמו חדש</option>
+                        <option value="used">👍 משומש</option>
                     </select>
                 </div>
                 <div class="error-msg" id="product-error"></div>
-                <button type="submit" class="btn-primary btn-full">העלאת המוצר</button>
+                <button type="submit" class="btn btn-primary btn-full btn-large">העלאת המוצר! 🚀</button>
             </form>
-        </div>
-    `;
+        </div>`;
     document.body.appendChild(modal);
 }
 
@@ -530,22 +462,16 @@ async function handleCreateProduct(e) {
     e.preventDefault();
     const form = e.target;
     const data = {
-        title: form.title.value,
-        description: form.description.value,
-        price: parseFloat(form.price.value),
-        category: form.category.value,
-        condition: form.condition.value,
-        images: [],
+        title: form.title.value, description: form.description.value,
+        price: parseFloat(form.price.value), category: form.category.value,
+        condition: form.condition.value, images: [],
     };
-
     try {
         await apiCall('/products/', { method: 'POST', body: data });
         document.getElementById('modal-product').remove();
-        toast('✓ המוצר הועלה וממתין לאישור הורה');
+        toast('🎯 המוצר עלה! ההורה יאשר אותו');
         renderChildDashboard();
-    } catch (err) {
-        document.getElementById('product-error').textContent = err.message;
-    }
+    } catch (err) { document.getElementById('product-error').textContent = err.message; }
 }
 
 // ----------------------------------------
@@ -555,18 +481,12 @@ async function handleCreateProduct(e) {
 function logout() {
     session.token = null;
     session.user = null;
-    location.reload();
+    renderHome();
 }
 
 // ----------------------------------------
-// Scroll
+// Init
 // ----------------------------------------
 
-function scrollToFeatures() {
-    document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Close modal on Escape
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAllModals();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
+renderHome();
