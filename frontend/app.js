@@ -6,7 +6,7 @@ const session = { token: null, user: null };
 // API Helper
 // ----------------------------------------
 
-async function _pollUntilAwake(maxMs = 50000) {
+async function _pollUntilAwake(maxMs = 90000) {
     const deadline = Date.now() + maxMs;
     while (Date.now() < deadline) {
         try {

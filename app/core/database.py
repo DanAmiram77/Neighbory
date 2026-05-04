@@ -8,12 +8,16 @@ from app.core.config import settings
 db_url = settings.get_database_url()
 
 # SQLite דורש הגדרה מיוחדת, PostgreSQL לא
-connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
+if "sqlite" in db_url:
+    connect_args = {"check_same_thread": False}
+else:
+    connect_args = {"connect_timeout": 10}  # don't hang >10s waiting for sleeping DB
 
 engine = create_engine(
     db_url,
     connect_args=connect_args,
-    pool_pre_ping=True,  # בודק חיבורים מתים לפני שימוש - חשוב לפרודקשן
+    pool_pre_ping=True,
+    pool_recycle=300,  # recycle connections every 5 min to avoid stale sockets
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
