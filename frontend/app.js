@@ -329,7 +329,26 @@ async function renderChildDashboard() {
             html += myProducts.map(p => productCardHTML(p)).join('');
         }
 
-        html += `</div><div class="section-title" style="margin-top:40px">🔍 מוצרים באזור</div><div class="dashboard-grid">`;
+        html += `</div>
+            <div style="margin-top:40px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div class="section-title" style="margin:0">🔍 מוצרים באזור</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <input id="market-search" type="text" placeholder="🔎 חיפוש..." onInput="filterMarketplace()" style="padding:10px 16px;border:3px solid var(--ink);border-radius:100px;font-family:var(--font-body);font-size:14px;font-weight:500;background:var(--white);width:180px;">
+                    <select id="market-category" onchange="filterMarketplace()" style="padding:10px 16px;border:3px solid var(--ink);border-radius:100px;font-family:var(--font-body);font-size:14px;font-weight:600;background:var(--white);cursor:pointer;">
+                        <option value="">כל הקטגוריות</option>
+                        <option value="toys">🧸 צעצועים</option>
+                        <option value="books">📚 ספרים</option>
+                        <option value="games">🎮 משחקים</option>
+                        <option value="clothes">👕 בגדים</option>
+                        <option value="sports">⚽ ספורט</option>
+                        <option value="collectibles">🎴 אספנות</option>
+                        <option value="electronics">🎧 אלקטרוניקה</option>
+                        <option value="handmade">🎨 יצירה</option>
+                        <option value="other">📦 אחר</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dashboard-grid" id="marketplace-grid">`;
 
         if (others.length === 0) {
             html += `<div class="empty-state"><div class="empty-state-emoji">🛍️</div><p>עדיין אין מוצרים של אחרים בשוק</p></div>`;
@@ -338,6 +357,9 @@ async function renderChildDashboard() {
         }
         html += `</div></div>`;
         main.innerHTML = html;
+
+        // store for filtering
+        window._marketplaceProducts = others;
     } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -376,6 +398,29 @@ async function renderParentDashboard() {
 }
 
 // ----------------------------------------
+// Marketplace filter
+// ----------------------------------------
+
+function filterMarketplace() {
+    const search = (document.getElementById('market-search')?.value || '').toLowerCase();
+    const category = document.getElementById('market-category')?.value || '';
+    const grid = document.getElementById('marketplace-grid');
+    if (!grid) return;
+
+    const filtered = (window._marketplaceProducts || []).filter(p => {
+        const matchText = !search || p.title.toLowerCase().includes(search) || p.description.toLowerCase().includes(search);
+        const matchCat = !category || p.category === category;
+        return matchText && matchCat;
+    });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><div class="empty-state-emoji">🔍</div><p>לא נמצאו מוצרים תואמים</p></div>`;
+    } else {
+        grid.innerHTML = filtered.map(p => productCardHTML(p)).join('');
+    }
+}
+
+// ----------------------------------------
 // Product helpers
 // ----------------------------------------
 
@@ -384,8 +429,11 @@ function categoryIcon(cat) {
 }
 
 function productCardHTML(p) {
+    const imgContent = (p.images && p.images.length > 0)
+        ? `<img src="${p.images[0]}" style="width:100%;height:100%;object-fit:cover;">`
+        : categoryIcon(p.category);
     return `<div class="product-card">
-        <div class="product-img">${categoryIcon(p.category)}</div>
+        <div class="product-img">${imgContent}</div>
         <div class="product-info">
             <div class="product-title">${esc(p.title)}</div>
             <div class="product-meta">
@@ -436,15 +484,33 @@ function showCreateStore() {
 async function handleCreateStore(e) {
     e.preventDefault();
     const data = formToObject(e.target);
-    data.latitude = 32.0853;
-    data.longitude = 34.7818;
     data.delivery_radius_km = parseInt(data.delivery_radius_km, 10) || 5;
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.textContent = '📍 מאתר מיקום...';
+    btn.disabled = true;
+
+    try {
+        const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000 })
+        );
+        data.latitude = pos.coords.latitude;
+        data.longitude = pos.coords.longitude;
+    } catch (_) {
+        data.latitude = 32.0853;
+        data.longitude = 34.7818;
+    }
+
     try {
         await apiCall('/stores/', { method: 'POST', body: data });
         document.getElementById('modal-store').remove();
         toast('🎉 החנות נפתחה! עכשיו אפשר להעלות מוצרים');
         renderChildDashboard();
-    } catch (err) { document.getElementById('store-error').textContent = err.message; }
+    } catch (err) {
+        btn.textContent = 'פותחים חנות! 🎉';
+        btn.disabled = false;
+        document.getElementById('store-error').textContent = err.message;
+    }
 }
 
 function showCreateProduct() {
@@ -486,11 +552,44 @@ function showCreateProduct() {
                         <option value="used">👍 משומש</option>
                     </select>
                 </div>
+                <div class="field">
+                    <label>תמונה (אופציונלי, עד 500KB)</label>
+                    <input type="file" id="product-image-input" accept="image/*" onchange="previewProductImage(this)" style="width:100%;padding:10px;border:3px solid var(--ink);border-radius:var(--r-sm);background:var(--white);cursor:pointer;">
+                    <div id="product-image-preview" style="margin-top:10px;display:none;">
+                        <img id="product-image-thumb" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--r-sm);border:3px solid var(--ink);">
+                        <button type="button" onclick="clearProductImage()" style="margin-top:6px;font-size:13px;background:none;border:none;color:var(--err);cursor:pointer;font-weight:600;">✕ הסר תמונה</button>
+                    </div>
+                </div>
                 <div class="error-msg" id="product-error"></div>
                 <button type="submit" class="btn btn-primary btn-full btn-large">העלאת המוצר! 🚀</button>
             </form>
         </div>`;
     document.body.appendChild(modal);
+}
+
+let _productImageBase64 = null;
+
+function previewProductImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+        document.getElementById('product-error').textContent = 'התמונה גדולה מדי — מקסימום 500KB';
+        input.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        _productImageBase64 = e.target.result;
+        document.getElementById('product-image-thumb').src = _productImageBase64;
+        document.getElementById('product-image-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearProductImage() {
+    _productImageBase64 = null;
+    document.getElementById('product-image-input').value = '';
+    document.getElementById('product-image-preview').style.display = 'none';
 }
 
 async function handleCreateProduct(e) {
@@ -499,10 +598,12 @@ async function handleCreateProduct(e) {
     const data = {
         title: form.title.value, description: form.description.value,
         price: parseFloat(form.price.value), category: form.category.value,
-        condition: form.condition.value, images: [],
+        condition: form.condition.value,
+        images: _productImageBase64 ? [_productImageBase64] : [],
     };
     try {
         await apiCall('/products/', { method: 'POST', body: data });
+        _productImageBase64 = null;
         document.getElementById('modal-product').remove();
         toast('🎯 המוצר עלה! ההורה יאשר אותו');
         renderChildDashboard();
