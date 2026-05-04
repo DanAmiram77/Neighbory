@@ -25,7 +25,7 @@ async function apiCall(path, options = {}) {
         if (!res.ok) throw new Error(data.detail || `שגיאה (${res.status})`);
         return data;
     } catch (err) {
-        if (err.message === 'Failed to fetch') throw new Error('לא ניתן להתחבר לשרת.');
+        if (err.message === 'Failed to fetch') throw new Error('השרת מתעורר מתרדמה — אנא המתינו 30 שניות ונסו שוב 🔄');
         throw err;
     }
 }
@@ -629,6 +629,9 @@ function logout() {
 // ----------------------------------------
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
+
+// Wake up the API in the background on page load
+fetch(API_URL + '/health').catch(() => {});
 
 const resetToken = new URLSearchParams(window.location.search).get('reset_token');
 if (resetToken) {
