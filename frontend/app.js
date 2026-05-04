@@ -241,10 +241,15 @@ function esc(s) {
 // Auth handlers
 // ----------------------------------------
 
+function _disableBtn(btn, text) { btn.disabled = true; btn.dataset.orig = btn.textContent; btn.textContent = text; }
+function _enableBtn(btn) { btn.disabled = false; btn.textContent = btn.dataset.orig; }
+
 async function handleLogin(e) {
     e.preventDefault();
     const errEl = document.getElementById('login-error');
+    const btn = e.target.querySelector('button[type=submit]');
     errEl.textContent = '';
+    _disableBtn(btn, 'מתחבר...');
     const data = formToObject(e.target);
     const body = new URLSearchParams();
     body.append('username', data.email);
@@ -256,32 +261,36 @@ async function handleLogin(e) {
         closeAllModals();
         toast(`👋 ברוכים השבים, ${res.user.full_name}!`);
         renderDashboard();
-    } catch (err) { errEl.textContent = err.message; }
+    } catch (err) { errEl.textContent = err.message; _enableBtn(btn); }
 }
 
 async function handleChildRegister(e) {
     e.preventDefault();
     const errEl = document.getElementById('register-child-error');
+    const btn = e.target.querySelector('button[type=submit]');
     errEl.textContent = '';
+    _disableBtn(btn, 'שולח... ⏳');
     const data = formToObject(e.target);
     try {
         await apiCall('/auth/register/child', { method: 'POST', body: data });
         closeAllModals();
         toast('🎯 ההרשמה הצליחה! שלחנו קוד אישור למייל ההורה.', 'success');
-    } catch (err) { errEl.textContent = err.message; }
+    } catch (err) { errEl.textContent = err.message; _enableBtn(btn); }
 }
 
 async function handleParentRegister(e) {
     e.preventDefault();
     const errEl = document.getElementById('register-parent-error');
+    const btn = e.target.querySelector('button[type=submit]');
     errEl.textContent = '';
+    _disableBtn(btn, 'שולח... ⏳');
     const data = formToObject(e.target);
     try {
         await apiCall('/auth/register/parent', { method: 'POST', body: data });
         closeAllModals();
         toast('🎉 נרשמתם בהצלחה! אפשר להתחבר עכשיו.');
         setTimeout(showLogin, 500);
-    } catch (err) { errEl.textContent = err.message; }
+    } catch (err) { errEl.textContent = err.message; _enableBtn(btn); }
 }
 
 // ----------------------------------------
@@ -654,8 +663,18 @@ function logout() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
 
-// Wake up the API in the background on page load
-fetch(API_URL + '/health').catch(() => {});
+// Wake up the API on page load — show a banner until it responds
+(async () => {
+    const banner = document.createElement('div');
+    banner.id = 'wake-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#7C3AED;color:#fff;text-align:center;padding:10px;font-family:var(--font-body,sans-serif);font-weight:600;font-size:14px;z-index:999;border-bottom:3px solid #1F2937';
+    banner.textContent = '⏳ השרת מתעורר — אנא המתינו כמה שניות...';
+    let shown = false;
+    const tid = setTimeout(() => { document.body.appendChild(banner); shown = true; }, 2000);
+    await _pollUntilAwake(60000);
+    clearTimeout(tid);
+    if (shown) banner.remove();
+})();
 
 const resetToken = new URLSearchParams(window.location.search).get('reset_token');
 if (resetToken) {
