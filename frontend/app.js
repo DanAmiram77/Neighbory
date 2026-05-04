@@ -35,14 +35,11 @@ async function apiCall(path, options = {}, _retried = false) {
         opts.body = JSON.stringify(opts.body);
     }
     try {
-        console.log('[API]', opts.method || 'GET', path, _retried ? '(retry)' : '');
         const res = await fetch(API_URL + path, opts);
-        console.log('[API] response', res.status, path);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.detail || `שגיאה (${res.status})`);
         return data;
     } catch (err) {
-        console.error('[API] error', path, err.message);
         if (err.message === 'Failed to fetch' && !_retried) {
             toast('השרת מתעורר מתרדמה... ממתין ⏳', 'info');
             const ok = await _pollUntilAwake();
