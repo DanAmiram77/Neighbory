@@ -127,6 +127,17 @@ app.include_router(chat_router.router)
 app.include_router(meetings.router)
 
 
+@app.delete("/admin/reset-db", tags=["Admin"])
+def reset_db(secret: str):
+    if secret != "neighbory-reset-2026":
+        from fastapi import HTTPException
+        raise HTTPException(403, "Forbidden")
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE users, stores, products, meetings, chat_messages, safe_points RESTART IDENTITY CASCADE"))
+        conn.commit()
+    return {"ok": True, "message": "All data cleared"}
+
+
 @app.get("/", tags=["Health"])
 def root():
     return {
