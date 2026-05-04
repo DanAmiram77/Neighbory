@@ -111,10 +111,12 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     browser sees 'Failed to fetch' instead of a useful error message."""
     origin = request.headers.get("origin", "")
     headers = {"Access-Control-Allow-Origin": "*"} if origin else {}
-    print(f"💥 Unhandled error on {request.method} {request.url.path}: {exc}")
+    import traceback
+    tb = traceback.format_exc()
+    print(f"💥 Unhandled error on {request.method} {request.url.path}: {exc}\n{tb}")
     return JSONResponse(
         status_code=500,
-        content={"detail": "שגיאת שרת פנימית. אנא נסו שוב."},
+        content={"detail": f"שגיאה: {type(exc).__name__}: {exc}"},
         headers=headers,
     )
 
