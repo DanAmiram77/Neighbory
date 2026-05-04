@@ -181,6 +181,7 @@ footer{border-top:4px solid var(--ink);padding:32px;text-align:center;background
 .toast.show{opacity:1;transform:translateX(50%) translateY(0)}
 .toast.success{background:var(--green-dark);border-color:var(--ink)}
 .toast.error{background:var(--err);border-color:var(--ink)}
+.toast.info{background:#7C3AED;border-color:var(--ink)}
 
 /* Dashboard */
 .dashboard{max-width:1280px;margin:0 auto;padding:40px 32px}

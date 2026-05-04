@@ -6,7 +6,22 @@ const session = { token: null, user: null };
 // API Helper
 // ----------------------------------------
 
-async function apiCall(path, options = {}) {
+async function _pollUntilAwake(maxMs = 50000) {
+    const deadline = Date.now() + maxMs;
+    while (Date.now() < deadline) {
+        try {
+            const ctl = new AbortController();
+            const tid = setTimeout(() => ctl.abort(), 5000);
+            const r = await fetch(API_URL + '/health', { signal: ctl.signal });
+            clearTimeout(tid);
+            if (r.ok) return true;
+        } catch (_) {}
+        await new Promise(r => setTimeout(r, 4000));
+    }
+    return false;
+}
+
+async function apiCall(path, options = {}, _retried = false) {
     const opts = {
         method: 'GET',
         headers: {
@@ -25,7 +40,13 @@ async function apiCall(path, options = {}) {
         if (!res.ok) throw new Error(data.detail || `שגיאה (${res.status})`);
         return data;
     } catch (err) {
-        if (err.message === 'Failed to fetch') throw new Error('השרת מתעורר מתרדמה — אנא המתינו 30 שניות ונסו שוב 🔄');
+        if (err.message === 'Failed to fetch' && !_retried) {
+            toast('השרת מתעורר מתרדמה... ממתין ⏳', 'info');
+            const ok = await _pollUntilAwake(50000);
+            if (ok) return apiCall(path, options, true);
+            throw new Error('השרת לא הגיב. אנא נסו שוב בעוד מספר דקות.');
+        }
+        if (err.message === 'Failed to fetch') throw new Error('השרת לא הגיב. אנא נסו שוב בעוד מספר דקות.');
         throw err;
     }
 }
