@@ -37,7 +37,6 @@ def register_parent(data: ParentRegister, db: Session = Depends(get_db)):
         if existing.role == "parent" and existing.full_name == "Parent Pending":
             existing.hashed_password = hash_password(data.password)
             existing.full_name = data.full_name
-            existing.phone = data.phone
             existing.is_approved = True
             db.commit()
             db.refresh(existing)
@@ -46,7 +45,6 @@ def register_parent(data: ParentRegister, db: Session = Depends(get_db)):
 
     parent = User(
         email=data.email,
-        phone=data.phone,
         hashed_password=hash_password(data.password),
         role="parent",
         username=f"parent_{secrets.token_hex(4)}",
