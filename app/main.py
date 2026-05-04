@@ -112,11 +112,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     origin = request.headers.get("origin", "")
     headers = {"Access-Control-Allow-Origin": "*"} if origin else {}
     import traceback
-    tb = traceback.format_exc()
-    print(f"💥 Unhandled error on {request.method} {request.url.path}: {exc}\n{tb}")
+    print(f"💥 Unhandled error on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
     return JSONResponse(
         status_code=500,
-        content={"detail": f"שגיאה: {type(exc).__name__}: {exc}"},
+        content={"detail": "שגיאת שרת פנימית. אנא נסו שוב."},
         headers=headers,
     )
 

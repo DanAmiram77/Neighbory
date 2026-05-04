@@ -3,6 +3,7 @@ databases:
     databaseName: neighbory
     user: neighbory
     plan: free
+    region: frankfurt
 
 services:
   - type: web
