@@ -37,7 +37,12 @@ async function apiCall(path, options = {}, _retried = false) {
     try {
         const res = await fetch(API_URL + path, opts);
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || `שגיאה (${res.status})`);
+        if (!res.ok) {
+            const detail = Array.isArray(data.detail)
+                ? data.detail.map(e => e.msg || JSON.stringify(e)).join(', ')
+                : (data.detail || `שגיאה (${res.status})`);
+            throw new Error(detail);
+        }
         return data;
     } catch (err) {
         if (err.message === 'Failed to fetch' && !_retried) {
