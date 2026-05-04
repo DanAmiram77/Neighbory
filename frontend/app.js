@@ -241,6 +241,13 @@ function esc(s) {
 function _disableBtn(btn, text) { btn.disabled = true; btn.dataset.orig = btn.textContent; btn.textContent = text; }
 function _enableBtn(btn) { btn.disabled = false; btn.textContent = btn.dataset.orig; }
 
+function togglePwd(btn) {
+    const inp = btn.parentElement.querySelector('input');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁';
+}
+
 async function handleLogin(e) {
     e.preventDefault();
     const errEl = document.getElementById('login-error');
@@ -266,8 +273,10 @@ async function handleChildRegister(e) {
     const errEl = document.getElementById('register-child-error');
     const btn = e.target.querySelector('button[type=submit]');
     errEl.textContent = '';
-    _disableBtn(btn, 'שולח... ⏳');
     const data = formToObject(e.target);
+    if (data.email !== data.email_confirm) { errEl.textContent = 'כתובות האימייל אינן תואמות'; return; }
+    delete data.email_confirm;
+    _disableBtn(btn, 'שולח... ⏳');
     try {
         await apiCall('/auth/register/child', { method: 'POST', body: data });
         closeAllModals();
@@ -280,8 +289,10 @@ async function handleParentRegister(e) {
     const errEl = document.getElementById('register-parent-error');
     const btn = e.target.querySelector('button[type=submit]');
     errEl.textContent = '';
-    _disableBtn(btn, 'שולח... ⏳');
     const data = formToObject(e.target);
+    if (data.email !== data.email_confirm) { errEl.textContent = 'כתובות האימייל אינן תואמות'; return; }
+    delete data.email_confirm;
+    _disableBtn(btn, 'שולח... ⏳');
     try {
         await apiCall('/auth/register/parent', { method: 'POST', body: data });
         closeAllModals();
@@ -429,7 +440,7 @@ async function renderParentDashboard() {
                     <div class="product-img" style="font-size:48px;display:flex;align-items:center;justify-content:center">🧒</div>
                     <div class="product-info">
                         <div class="product-title">${esc(c.full_name)}</div>
-                        <div style="color:var(--ink-soft);font-size:13px;margin-bottom:12px;font-weight:500">@${esc(c.username)} · גיל ${c.age}</div>
+                        <div style="color:var(--ink-soft);font-size:13px;margin-bottom:12px;font-weight:500">גיל ${c.age}</div>
                         <button class="btn btn-primary btn-full" style="font-size:13px" onclick="approveChild(${c.id})">✅ אישור חשבון</button>
                     </div>
                 </div>`).join('') + `</div>`;

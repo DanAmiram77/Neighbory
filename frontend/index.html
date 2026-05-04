@@ -41,7 +41,7 @@
         <p class="modal-sub">התחברו לחשבון שלכם</p>
         <form onsubmit="handleLogin(event)">
             <div class="field"><label>אימייל</label><input type="email" name="email" required placeholder="you@example.com"></div>
-            <div class="field"><label>סיסמה</label><input type="password" name="password" required placeholder="••••••••"></div>
+            <div class="field"><label>סיסמה</label><div class="pwd-wrap"><input type="password" name="password" required placeholder="••••••••"><button type="button" class="pwd-toggle" onclick="togglePwd(this)" aria-label="הצג סיסמה">👁</button></div></div>
             <div id="login-error" class="error-msg"></div>
             <button type="submit" class="btn btn-primary btn-full btn-large">בואו ניכנס! 🚀</button>
         </form>
@@ -94,21 +94,16 @@
             <h2 class="modal-title">מתחילים את ההרפתקה!</h2>
             <p class="modal-sub">לאחר ההרשמה, ההורה צריך לאשר את החשבון</p>
             <form onsubmit="handleChildRegister(event)">
-                <div class="field-row">
-                    <div class="field"><label>שם משתמש</label><input type="text" name="username" required minlength="3" placeholder="cooltrader"></div>
-                    <div class="field"><label>גיל</label><input type="number" name="age" required min="13" max="18" placeholder="14"></div>
-                </div>
                 <div class="field"><label>שם מלא</label><input type="text" name="full_name" required minlength="2" placeholder="ישראל ישראלי"></div>
                 <div class="field-row">
-                    <div class="field"><label>אימייל</label><input type="email" name="email" required placeholder="you@example.com"></div>
+                    <div class="field"><label>גיל</label><input type="number" name="age" required min="13" max="18" placeholder="14"></div>
                     <div class="field"><label>עיר</label><input type="text" name="city" required placeholder="תל אביב"></div>
                 </div>
-                <div class="field"><label>סיסמה</label><input type="password" name="password" required minlength="8" placeholder="לפחות 8 תווים"></div>
+                <div class="field"><label>אימייל</label><input type="email" name="email" required placeholder="you@example.com"></div>
+                <div class="field"><label>אימות אימייל</label><input type="email" name="email_confirm" required placeholder="הזינו שוב את האימייל"></div>
+                <div class="field"><label>סיסמה</label><div class="pwd-wrap"><input type="password" name="password" required minlength="8" placeholder="לפחות 8 תווים"><button type="button" class="pwd-toggle" onclick="togglePwd(this)" aria-label="הצג סיסמה">👁</button></div></div>
                 <span class="divider-label">👨‍👩‍👧 פרטי ההורה</span>
-                <div class="field-row">
-                    <div class="field"><label>אימייל ההורה</label><input type="email" name="parent_email" required placeholder="parent@example.com"></div>
-                    <div class="field"><label>טלפון ההורה</label><input type="tel" name="parent_phone" required minlength="9" placeholder="0501234567"></div>
-                </div>
+                <div class="field"><label>אימייל ההורה</label><input type="email" name="parent_email" required placeholder="parent@example.com"></div>
                 <div id="register-child-error" class="error-msg"></div>
                 <button type="submit" class="btn btn-primary btn-full btn-large">צרו לי חשבון! 🎯</button>
             </form>
@@ -120,8 +115,8 @@
             <form onsubmit="handleParentRegister(event)">
                 <div class="field"><label>שם מלא</label><input type="text" name="full_name" required minlength="2" placeholder="שם מלא"></div>
                 <div class="field"><label>אימייל</label><input type="email" name="email" required placeholder="parent@example.com"></div>
-                <div class="field"><label>טלפון</label><input type="tel" name="phone" required minlength="9" placeholder="0501234567"></div>
-                <div class="field"><label>סיסמה</label><input type="password" name="password" required minlength="8" placeholder="לפחות 8 תווים"></div>
+                <div class="field"><label>אימות אימייל</label><input type="email" name="email_confirm" required placeholder="הזינו שוב את האימייל"></div>
+                <div class="field"><label>סיסמה</label><div class="pwd-wrap"><input type="password" name="password" required minlength="8" placeholder="לפחות 8 תווים"><button type="button" class="pwd-toggle" onclick="togglePwd(this)" aria-label="הצג סיסמה">👁</button></div></div>
                 <div id="register-parent-error" class="error-msg"></div>
                 <button type="submit" class="btn btn-primary btn-full btn-large">הירשמו 👍</button>
             </form>

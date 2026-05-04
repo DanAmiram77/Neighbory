@@ -182,6 +182,10 @@ footer{border-top:4px solid var(--ink);padding:32px;text-align:center;background
 .toast.success{background:var(--green-dark);border-color:var(--ink)}
 .toast.error{background:var(--err);border-color:var(--ink)}
 .toast.info{background:#7C3AED;border-color:var(--ink)}
+.pwd-wrap{position:relative;display:flex;align-items:stretch}
+.pwd-wrap input{flex:1;padding-left:48px}
+.pwd-toggle{position:absolute;left:0;top:0;bottom:0;width:44px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--ink-soft);display:flex;align-items:center;justify-content:center}
+.pwd-toggle:hover{color:var(--ink)}
 
 /* Dashboard */
 .dashboard{max-width:1280px;margin:0 auto;padding:40px 32px}

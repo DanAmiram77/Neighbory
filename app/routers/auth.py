@@ -68,21 +68,21 @@ def register_child(data: ChildRegister, db: Session = Depends(get_db)):
     # בדיקה שהאימייל לא קיים
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "האימייל כבר קיים במערכת")
-    if db.query(User).filter(User.username == data.username).first():
-        raise HTTPException(400, "שם המשתמש כבר תפוס")
+
+    # יצירת username אוטומטי מהאימייל
+    prefix = ''.join(c for c in data.email.split('@')[0].lower() if c.isalnum() or c == '_')[:15]
+    username = f"{prefix}_{secrets.token_hex(3)}"
 
     # חיפוש/יצירת הורה
     parent = db.query(User).filter(User.email == data.parent_email).first()
     if not parent:
-        # יוצרים הורה placeholder - הוא יצטרך להירשם כדי לאשר
         parent = User(
             email=data.parent_email,
-            phone=data.parent_phone,
-            hashed_password=hash_password(secrets.token_urlsafe(16)),  # סיסמה זמנית
+            hashed_password=hash_password(secrets.token_urlsafe(16)),
             role="parent",
             username=f"parent_{secrets.token_hex(4)}",
             full_name="Parent Pending",
-            is_approved=False,  # צריך להירשם בעצמו
+            is_approved=False,
         )
         db.add(parent)
         db.flush()
@@ -94,7 +94,7 @@ def register_child(data: ChildRegister, db: Session = Depends(get_db)):
         email=data.email,
         hashed_password=hash_password(data.password),
         role="child",
-        username=data.username,
+        username=username,
         full_name=data.full_name,
         age=data.age,
         city=data.city,

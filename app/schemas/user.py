@@ -8,28 +8,17 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class ChildRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
-    username: str = Field(min_length=3, max_length=30)
     full_name: str = Field(min_length=2, max_length=100)
-    age: int = Field(ge=13, le=18)  # רק 13-18 ב-MVP
+    age: int = Field(ge=13, le=18)
     city: str
     neighborhood: Optional[str] = None
-    parent_email: EmailStr  # חובה - אימייל של הורה
-    parent_phone: str = Field(min_length=9, max_length=15)
-
-    @field_validator("username")
-    @classmethod
-    def username_not_real_name(cls, v: str) -> str:
-        """אסור לכלול שם מלא אמיתי בשם משתמש (הנחיה בסיסית)"""
-        if " " in v:
-            raise ValueError("שם משתמש לא יכול להכיל רווחים")
-        return v.lower()
+    parent_email: EmailStr
 
 
 class ParentRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=9, max_length=15)
 
 
 class UserLogin(BaseModel):
