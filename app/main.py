@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.core.database import Base, engine, SessionLocal
 from app.core.config import settings
@@ -59,10 +60,24 @@ def seed_safe_points():
         db.close()
 
 
+def run_migrations():
+    """Add any missing columns to existing tables (safe, idempotent)."""
+    migrations = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(100)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS neighborhood VARCHAR(100)",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            conn.execute(text(sql))
+        conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
+        run_migrations()
         seed_safe_points()
     except Exception as e:
         print(f"⚠️ DB init error (will retry on first request): {e}")
