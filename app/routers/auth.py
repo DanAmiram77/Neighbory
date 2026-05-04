@@ -106,7 +106,6 @@ def register_child(data: ChildRegister, db: Session = Depends(get_db)):
         "message": "הרשמה הצליחה. ההורה צריך לאשר את החשבון.",
         "child_id": child.id,
         "parent_email": parent.email,
-        "approval_code_for_testing": approval_code,  # רק לבדיקות!
     }
 
 

@@ -202,9 +202,9 @@ async function handleChildRegister(e) {
     errEl.textContent = '';
     const data = formToObject(e.target);
     try {
-        const res = await apiCall('/auth/register/child', { method: 'POST', body: data });
+        await apiCall('/auth/register/child', { method: 'POST', body: data });
         closeAllModals();
-        toast(`🎯 ההרשמה הצליחה! קוד אישור להורה: ${res.approval_code_for_testing}`, 'success');
+        toast('🎯 ההרשמה הצליחה! שלחנו קוד אישור למייל ההורה.', 'success');
     } catch (err) { errEl.textContent = err.message; }
 }
 
