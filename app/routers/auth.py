@@ -30,7 +30,18 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/register/parent", response_model=UserPrivate, status_code=201)
 def register_parent(data: ParentRegister, db: Session = Depends(get_db)):
     """הרשמת הורה - מאושר מיד"""
-    if db.query(User).filter(User.email == data.email).first():
+    existing = db.query(User).filter(User.email == data.email).first()
+
+    if existing:
+        # Allow claiming a placeholder account created when a child registered first
+        if existing.role == "parent" and existing.full_name == "Parent Pending":
+            existing.hashed_password = hash_password(data.password)
+            existing.full_name = data.full_name
+            existing.phone = data.phone
+            existing.is_approved = True
+            db.commit()
+            db.refresh(existing)
+            return existing
         raise HTTPException(400, "האימייל כבר קיים במערכת")
 
     parent = User(
@@ -40,7 +51,7 @@ def register_parent(data: ParentRegister, db: Session = Depends(get_db)):
         role="parent",
         username=f"parent_{secrets.token_hex(4)}",
         full_name=data.full_name,
-        is_approved=True,  # הורים מאושרים מיד
+        is_approved=True,
     )
     db.add(parent)
     db.commit()
@@ -107,6 +118,20 @@ def register_child(data: ChildRegister, db: Session = Depends(get_db)):
         "child_id": child.id,
         "parent_email": parent.email,
     }
+
+
+@router.get("/parent/pending-children")
+def get_pending_children(
+    db: Session = Depends(get_db),
+    parent: User = Depends(require_parent),
+):
+    """רשימת ילדים שממתינים לאישור ההורה"""
+    children = db.query(User).filter(
+        User.parent_id == parent.id,
+        User.role == "child",
+        User.is_approved == False,  # noqa: E712
+    ).all()
+    return [{"id": c.id, "username": c.username, "full_name": c.full_name, "age": c.age} for c in children]
 
 
 @router.post("/parent/approve/{child_id}")

@@ -397,22 +397,49 @@ async function renderChildDashboard() {
     } catch (err) { toast(err.message, 'error'); }
 }
 
+async function approveChild(childId) {
+    const code = prompt('הזינו את קוד האישור שנשלח לאימייל שלכם:');
+    if (!code) return;
+    try {
+        await apiCall(`/auth/parent/approve/${childId}`, { method: 'POST', body: { approval_code: code } });
+        toast('✅ חשבון הילד/ה אושר בהצלחה!', 'success');
+        renderParentDashboard();
+    } catch (err) { toast(err.message, 'error'); }
+}
+
 async function renderParentDashboard() {
     const main = document.getElementById('main-content');
     main.innerHTML = `<div class="dashboard"><div style="text-align:center;padding:60px;font-size:40px;">⏳</div></div>`;
 
     try {
-        const pending = await apiCall('/products/pending-approval');
+        const [pendingChildren, pendingProducts] = await Promise.all([
+            apiCall('/auth/parent/pending-children').catch(() => []),
+            apiCall('/products/pending-approval').catch(() => []),
+        ]);
+
         let html = `<div class="dashboard">
             <div class="dashboard-header">
                 <div class="dashboard-title"><h1>👨‍👩‍👧 לוח הבקרה שלכם</h1><p>אישור פעילות ילדיכם בקליק</p></div>
-            </div>
-            <div class="section-title">📦 מוצרים שמחכים לאישור</div>`;
+            </div>`;
 
-        if (pending.length === 0) {
+        if (pendingChildren.length > 0) {
+            html += `<div class="section-title">👶 ילדים שממתינים לאישור חשבון</div>
+            <div class="dashboard-grid">` + pendingChildren.map(c => `
+                <div class="product-card">
+                    <div class="product-img" style="font-size:48px;display:flex;align-items:center;justify-content:center">🧒</div>
+                    <div class="product-info">
+                        <div class="product-title">${esc(c.full_name)}</div>
+                        <div style="color:var(--ink-soft);font-size:13px;margin-bottom:12px;font-weight:500">@${esc(c.username)} · גיל ${c.age}</div>
+                        <button class="btn btn-primary btn-full" style="font-size:13px" onclick="approveChild(${c.id})">✅ אישור חשבון</button>
+                    </div>
+                </div>`).join('') + `</div>`;
+        }
+
+        html += `<div class="section-title">📦 מוצרים שמחכים לאישור</div>`;
+        if (pendingProducts.length === 0) {
             html += `<div class="empty-state"><div class="empty-state-emoji">🎉</div><h3>הכל בשליטה!</h3><p>אין מוצרים שמחכים לאישור עכשיו</p></div>`;
         } else {
-            html += `<div class="dashboard-grid">` + pending.map(p => `
+            html += `<div class="dashboard-grid">` + pendingProducts.map(p => `
                 <div class="product-card">
                     <div class="product-img">${categoryIcon(p.category)}</div>
                     <div class="product-info">
