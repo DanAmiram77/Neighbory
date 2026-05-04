@@ -4,8 +4,9 @@ KidsTrade API - נקודת הכניסה הראשית.
 """
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.core.database import Base, engine, SessionLocal
@@ -101,6 +102,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Ensure CORS headers are present even on unhandled 500 errors.
+    Without this, the CORSMiddleware is bypassed on crashes and the
+    browser sees 'Failed to fetch' instead of a useful error message."""
+    origin = request.headers.get("origin", "")
+    headers = {"Access-Control-Allow-Origin": "*"} if origin else {}
+    print(f"💥 Unhandled error on {request.method} {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "שגיאת שרת פנימית. אנא נסו שוב."},
+        headers=headers,
+    )
 
 # רישום כל הנתיבים
 app.include_router(auth.router)
