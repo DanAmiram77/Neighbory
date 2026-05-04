@@ -127,7 +127,7 @@ app.include_router(chat_router.router)
 app.include_router(meetings.router)
 
 
-@app.delete("/admin/reset-db", tags=["Admin"])
+@app.get("/admin/reset-db", tags=["Admin"])
 def reset_db(secret: str):
     if secret != "neighbory-reset-2026":
         from fastapi import HTTPException
