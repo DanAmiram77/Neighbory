@@ -133,7 +133,7 @@ def reset_db(secret: str):
         from fastapi import HTTPException
         raise HTTPException(403, "Forbidden")
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE users, stores, products, meetings, chat_messages, safe_points RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE users, stores, products, meetings, conversations, messages, safe_points RESTART IDENTITY CASCADE"))
         conn.commit()
     return {"ok": True, "message": "All data cleared"}
 
