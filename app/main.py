@@ -127,6 +127,30 @@ app.include_router(chat_router.router)
 app.include_router(meetings.router)
 
 
+@app.get("/admin/stats", tags=["Admin"])
+def admin_stats(secret: str):
+    if secret != "neighbory-reset-2026":
+        from fastapi import HTTPException
+        raise HTTPException(403, "Forbidden")
+    with engine.connect() as conn:
+        def q(sql): return conn.execute(text(sql)).scalar()
+        return {
+            "users": {
+                "total": q("SELECT COUNT(*) FROM users"),
+                "parents": q("SELECT COUNT(*) FROM users WHERE role='parent'"),
+                "children": q("SELECT COUNT(*) FROM users WHERE role='child'"),
+                "approved": q("SELECT COUNT(*) FROM users WHERE is_approved=true"),
+                "pending": q("SELECT COUNT(*) FROM users WHERE is_approved=false"),
+            },
+            "emails": [
+                {"id": r[0], "email": r[1], "role": r[2], "full_name": r[3], "approved": r[4]}
+                for r in conn.execute(text("SELECT id, email, role, full_name, is_approved FROM users ORDER BY id")).fetchall()
+            ],
+            "stores": q("SELECT COUNT(*) FROM stores"),
+            "products": q("SELECT COUNT(*) FROM products"),
+        }
+
+
 @app.get("/admin/reset-db", tags=["Admin"])
 def reset_db(secret: str):
     if secret != "neighbory-reset-2026":
