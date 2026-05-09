@@ -280,7 +280,9 @@ async function handleChildRegister(e) {
     errEl.textContent = '';
     const data = formToObject(e.target);
     if (data.email !== data.email_confirm) { errEl.textContent = 'כתובות האימייל אינן תואמות'; return; }
+    if (data.parent_email !== data.parent_email_confirm) { errEl.textContent = 'כתובות אימייל ההורה אינן תואמות'; return; }
     delete data.email_confirm;
+    delete data.parent_email_confirm;
     _disableBtn(btn, 'שולח... ⏳');
     try {
         await apiCall('/auth/register/child', { method: 'POST', body: data });
@@ -413,6 +415,13 @@ async function renderChildDashboard() {
     } catch (err) { toast(err.message, 'error'); }
 }
 
+async function resendApproval(childId) {
+    try {
+        await apiCall(`/auth/parent/resend-approval/${childId}`, { method: 'POST' });
+        toast('📧 קוד אישור חדש נשלח לאימייל שלך!', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+}
+
 async function approveChild(childId) {
     const code = prompt('הזינו את קוד האישור שנשלח לאימייל שלכם:');
     if (!code) return;
@@ -447,6 +456,7 @@ async function renderParentDashboard() {
                         <div class="product-title">${esc(c.full_name)}</div>
                         <div style="color:var(--ink-soft);font-size:13px;margin-bottom:12px;font-weight:500">גיל ${c.age}</div>
                         <button class="btn btn-primary btn-full" style="font-size:13px" onclick="approveChild(${c.id})">✅ אישור חשבון</button>
+                        <button class="btn btn-secondary btn-full" style="font-size:13px;margin-top:8px" onclick="resendApproval(${c.id})">📧 שלח קוד שוב</button>
                     </div>
                 </div>`).join('') + `</div>`;
         }

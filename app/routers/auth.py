@@ -132,6 +132,36 @@ def get_pending_children(
     return [{"id": c.id, "username": c.username, "full_name": c.full_name, "age": c.age} for c in children]
 
 
+@router.post("/parent/resend-approval/{child_id}")
+def resend_approval(
+    child_id: int,
+    db: Session = Depends(get_db),
+    parent: User = Depends(require_parent),
+):
+    """שליחה מחדש של קוד אישור לילד"""
+    child = db.query(User).filter(
+        User.id == child_id,
+        User.role == "child",
+        User.parent_id == parent.id,
+    ).first()
+    if not child:
+        raise HTTPException(404, "ילד לא נמצא או שאינך ההורה שלו")
+    if child.is_approved:
+        raise HTTPException(400, "החשבון כבר מאושר")
+
+    approval_code = secrets.token_hex(3).upper()
+    child.approval_code = approval_code
+    db.commit()
+
+    send_parent_approval_email(
+        parent_email=parent.email,
+        child_name=child.full_name,
+        child_username=child.username,
+        approval_code=approval_code,
+    )
+    return {"message": f"קוד אישור חדש נשלח לאימייל {parent.email}"}
+
+
 @router.post("/parent/approve/{child_id}")
 def approve_child(
     child_id: int,
