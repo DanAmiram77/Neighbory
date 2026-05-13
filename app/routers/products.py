@@ -141,6 +141,30 @@ def reject_product(
     return {"message": "המוצר נדחה והוסר"}
 
 
+@router.put("/{product_id}", response_model=ProductResponse)
+def update_product(
+    product_id: int,
+    data: ProductCreate,
+    db: Session = Depends(get_db),
+    child: User = Depends(require_child),
+):
+    """ילד עורך מוצר שלו — חוזר לסטטוס ממתין לאישור הורה"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(404, "מוצר לא נמצא")
+
+    store = db.query(Store).filter(Store.id == product.store_id).first()
+    if store.owner_id != child.id:
+        raise HTTPException(403, "זה לא המוצר שלך")
+
+    for key, value in data.model_dump().items():
+        setattr(product, key, value)
+    product.status = "pending_parent"
+    db.commit()
+    db.refresh(product)
+    return product
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
     product_id: int,

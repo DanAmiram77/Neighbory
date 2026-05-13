@@ -527,9 +527,103 @@ function productCardHTML(p, isOwner = false) {
                 <span class="product-price">${p.price}₪</span>
                 <span class="status-badge status-${p.status === 'active' ? 'active' : 'pending'}">${p.status === 'active' ? '✓ פעיל' : '⏳ ממתין'}</span>
             </div>
-            ${isOwner ? `<button class="btn btn-secondary btn-full" style="margin-top:10px;font-size:13px;color:var(--err);border-color:var(--err)" onclick="deleteProduct(${p.id})">🗑 מחיקת מוצר</button>` : ''}
+            ${isOwner ? `
+            <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn btn-secondary" style="flex:1;font-size:13px" onclick='showEditProduct(${JSON.stringify(p).replace(/'/g,"&#39;")})'>✏️ עריכה</button>
+                <button class="btn btn-secondary" style="flex:1;font-size:13px;color:var(--err);border-color:var(--err)" onclick="deleteProduct(${p.id})">🗑 מחיקה</button>
+            </div>` : ''}
         </div>
     </div>`;
+}
+
+function showEditProduct(p) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'modal-edit-product';
+    modal.innerHTML = `
+        <div class="modal-backdrop" onclick="document.getElementById('modal-edit-product').remove()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="document.getElementById('modal-edit-product').remove()">×</button>
+            <div class="modal-emoji">✏️</div>
+            <h2 class="modal-title">עריכת מוצר</h2>
+            <p class="modal-sub">לאחר השמירה המוצר יחכה שוב לאישור הורה</p>
+            <form onsubmit="handleEditProduct(event, ${p.id})">
+                <div class="field"><label>כותרת</label><input type="text" name="title" required minlength="3" value="${esc(p.title)}"></div>
+                <div class="field"><label>תיאור</label><input type="text" name="description" required minlength="10" value="${esc(p.description)}"></div>
+                <div class="field-row">
+                    <div class="field"><label>מחיר (₪)</label><input type="number" name="price" required min="1" max="500" value="${p.price}"></div>
+                    <div class="field"><label>קטגוריה</label>
+                        <select name="category" required>
+                            <option value="">בחרו</option>
+                            ${['toys','books','games','clothes','sports','collectibles','electronics','handmade','other'].map(c =>
+                                `<option value="${c}" ${p.category===c?'selected':''}>${categoryIcon(c)} ${c}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="field"><label>מצב</label>
+                    <select name="condition" required>
+                        <option value="">בחרו</option>
+                        <option value="new" ${p.condition==='new'?'selected':''}>✨ חדש באריזה</option>
+                        <option value="like_new" ${p.condition==='like_new'?'selected':''}>⭐ כמו חדש</option>
+                        <option value="used" ${p.condition==='used'?'selected':''}>👍 משומש</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>תמונה חדשה (אופציונלי)</label>
+                    <input type="file" id="edit-image-input" accept="image/*" onchange="previewEditImage(this)" style="width:100%;padding:10px;border:3px solid var(--ink);border-radius:var(--r-sm);background:var(--white);cursor:pointer;">
+                    <div id="edit-image-preview" style="margin-top:10px;${p.images&&p.images[0]?'':'display:none'}">
+                        <img id="edit-image-thumb" src="${p.images&&p.images[0]?p.images[0]:''}" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--r-sm);border:3px solid var(--ink);">
+                        <button type="button" onclick="clearEditImage()" style="margin-top:6px;font-size:13px;background:none;border:none;color:var(--err);cursor:pointer;font-weight:600;">✕ הסר תמונה</button>
+                    </div>
+                </div>
+                <div class="error-msg" id="edit-product-error"></div>
+                <button type="submit" class="btn btn-primary btn-full btn-large">שמירת שינויים ✅</button>
+            </form>
+        </div>`;
+    document.body.appendChild(modal);
+    _editImageBase64 = (p.images && p.images[0]) ? p.images[0] : null;
+}
+
+let _editImageBase64 = null;
+
+function previewEditImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { document.getElementById('edit-product-error').textContent = 'התמונה גדולה מדי — מקסימום 5MB'; input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = async e => {
+        _editImageBase64 = await _compressImage(e.target.result);
+        document.getElementById('edit-image-thumb').src = _editImageBase64;
+        document.getElementById('edit-image-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearEditImage() {
+    _editImageBase64 = null;
+    document.getElementById('edit-image-input').value = '';
+    document.getElementById('edit-image-preview').style.display = 'none';
+}
+
+async function handleEditProduct(e, productId) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        title: form.title.value, description: form.description.value,
+        price: parseFloat(form.price.value), category: form.category.value,
+        condition: form.condition.value,
+        images: _editImageBase64 ? [_editImageBase64] : [],
+    };
+    const btn = form.querySelector('button[type=submit]');
+    _disableBtn(btn, 'שומר... ⏳');
+    try {
+        await apiCall(`/products/${productId}`, { method: 'PUT', body: data });
+        _editImageBase64 = null;
+        document.getElementById('modal-edit-product').remove();
+        toast('✅ המוצר עודכן — ממתין לאישור הורה מחדש', 'success');
+        renderChildDashboard();
+    } catch (err) { document.getElementById('edit-product-error').textContent = err.message; _enableBtn(btn); }
 }
 
 async function deleteProduct(id) {
@@ -666,19 +760,38 @@ function showCreateProduct() {
 
 let _productImageBase64 = null;
 
+function _compressImage(dataUrl, maxPx = 900, quality = 0.75) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxPx || h > maxPx) {
+                if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+                else { w = Math.round(w * maxPx / h); h = maxPx; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = dataUrl;
+    });
+}
+
 function previewProductImage(input) {
     const file = input.files[0];
     if (!file) return;
-    if (file.size > 500 * 1024) {
-        document.getElementById('product-error').textContent = 'התמונה גדולה מדי — מקסימום 500KB';
+    if (file.size > 5 * 1024 * 1024) {
+        document.getElementById('product-error').textContent = 'התמונה גדולה מדי — מקסימום 5MB';
         input.value = '';
         return;
     }
     const reader = new FileReader();
-    reader.onload = e => {
-        _productImageBase64 = e.target.result;
-        document.getElementById('product-image-thumb').src = _productImageBase64;
-        document.getElementById('product-image-preview').style.display = 'block';
+    reader.onload = async e => {
+        _productImageBase64 = await _compressImage(e.target.result);
+        const thumb = document.getElementById('product-image-thumb');
+        const preview = document.getElementById('product-image-preview');
+        if (thumb) { thumb.src = _productImageBase64; preview.style.display = 'block'; }
     };
     reader.readAsDataURL(file);
 }
