@@ -531,7 +531,7 @@ function productCardHTML(p, isOwner = false) {
             <div style="display:flex;gap:8px;margin-top:10px">
                 <button class="btn btn-secondary" style="flex:1;font-size:13px" onclick='showEditProduct(${JSON.stringify(p).replace(/'/g,"&#39;")})'>✏️ עריכה</button>
                 <button class="btn btn-secondary" style="flex:1;font-size:13px;color:var(--err);border-color:var(--err)" onclick="deleteProduct(${p.id})">🗑 מחיקה</button>
-            </div>` : ''}
+            </div>` : `<button class="btn btn-primary btn-full" style="margin-top:10px;font-size:14px;font-weight:700" onclick='showProductContact(${JSON.stringify(p).replace(/'/g,"&#39;")})'>🛒 אני רוצה לקנות</button>`}
         </div>
     </div>`;
 }
@@ -624,6 +624,94 @@ async function handleEditProduct(e, productId) {
         toast('✅ המוצר עודכן — ממתין לאישור הורה מחדש', 'success');
         renderChildDashboard();
     } catch (err) { document.getElementById('edit-product-error').textContent = err.message; _enableBtn(btn); }
+}
+
+async function showProductContact(p) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'modal-product-contact';
+
+    let safePoints = [];
+    try { safePoints = await apiCall('/safe-points'); } catch (_) {}
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const minDT = tomorrow.toISOString().slice(0, 16);
+
+    const imgHTML = (p.images && p.images[0])
+        ? `<img src="${p.images[0]}" style="width:72px;height:72px;object-fit:cover;border-radius:var(--r-sm);border:3px solid var(--ink);flex-shrink:0">`
+        : `<div style="width:72px;height:72px;display:flex;align-items:center;justify-content:center;font-size:36px;border:3px solid var(--ink);border-radius:var(--r-sm);flex-shrink:0">${categoryIcon(p.category)}</div>`;
+
+    const templates = [
+        { key: 'interested',        label: '😊 אני מעוניין/ת לקנות' },
+        { key: 'still_available',   label: '🤔 האם המוצר עדיין זמין?' },
+        { key: 'price_negotiation', label: '💸 אפשר להוריד קצת?' },
+        { key: 'meeting_request',   label: '📅 מתי אפשר להיפגש?' },
+    ];
+
+    modal.innerHTML = `
+        <div class="modal-backdrop" onclick="document.getElementById('modal-product-contact').remove()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="document.getElementById('modal-product-contact').remove()">×</button>
+            <div style="display:flex;gap:14px;align-items:center;margin-bottom:20px">
+                ${imgHTML}
+                <div>
+                    <div style="font-family:var(--font-display);font-size:18px;font-weight:700">${esc(p.title)}</div>
+                    <div style="font-size:22px;font-weight:900;color:var(--purple-dark)">${p.price}₪</div>
+                </div>
+            </div>
+            <span class="divider-label">💬 שלח הודעה למוכר</span>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+                ${templates.map(t => `
+                    <button id="tmpl-${t.key}" class="btn btn-secondary" style="text-align:right;font-size:14px"
+                        onclick="sendTemplateMsg(${p.id},'${t.key}',this)">${t.label}</button>
+                `).join('')}
+            </div>
+            <span class="divider-label">📅 קביעת מפגש בנקודה בטוחה</span>
+            <form onsubmit="handleScheduleMeeting(event,${p.id})" style="margin-top:12px">
+                <div class="field">
+                    <label>מקום המפגש</label>
+                    <select name="safe_point_id" required>
+                        <option value="">בחרו נקודת מפגש</option>
+                        ${safePoints.map(sp => `<option value="${sp.id}">${sp.name} — ${sp.city}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>תאריך ושעה</label>
+                    <input type="datetime-local" name="scheduled_at" required min="${minDT}" value="${minDT}">
+                </div>
+                <div class="error-msg" id="meeting-error"></div>
+                <button type="submit" class="btn btn-primary btn-full btn-large">קביעת מפגש 📅</button>
+            </form>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function sendTemplateMsg(productId, templateKey, btn) {
+    _disableBtn(btn, '⏳ שולח...');
+    try {
+        await apiCall('/chat/send', { method: 'POST', body: { product_id: productId, template_key: templateKey } });
+        btn.textContent = '✓ נשלח!';
+        btn.style.background = 'var(--green-light)';
+        btn.disabled = true;
+    } catch (err) { toast(err.message, 'error'); _enableBtn(btn); }
+}
+
+async function handleScheduleMeeting(e, productId) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = form.querySelector('button[type=submit]');
+    _disableBtn(btn, '⏳ קובע...');
+    try {
+        await apiCall('/meetings', { method: 'POST', body: {
+            product_id: productId,
+            safe_point_id: parseInt(form.safe_point_id.value),
+            scheduled_at: new Date(form.scheduled_at.value).toISOString(),
+        }});
+        document.getElementById('modal-product-contact').remove();
+        toast('📅 המפגש נקבע! נוסיף תכונת "הפגישות שלי" בקרוב.', 'success');
+    } catch (err) { document.getElementById('meeting-error').textContent = err.message; _enableBtn(btn); }
 }
 
 async function deleteProduct(id) {
