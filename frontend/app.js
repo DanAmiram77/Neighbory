@@ -378,7 +378,7 @@ async function renderChildDashboard() {
         if (myProducts.length === 0) {
             html += `<div class="empty-state"><div class="empty-state-emoji">📦</div><h3>בואו נעלה מוצר ראשון!</h3><p>ההורה יאשר וזה יופיע בשוק</p><button class="btn btn-primary btn-large" onclick="showCreateProduct()">➕ העלאת מוצר</button></div>`;
         } else {
-            html += myProducts.map(p => productCardHTML(p)).join('');
+            html += myProducts.map(p => productCardHTML(p, true)).join('');
         }
 
         html += `</div>
@@ -515,7 +515,7 @@ function categoryIcon(cat) {
     return ({toys:'🧸',books:'📚',games:'🎮',clothes:'👕',sports:'⚽',collectibles:'🎴',electronics:'🎧',handmade:'🎨',other:'📦'})[cat] || '📦';
 }
 
-function productCardHTML(p) {
+function productCardHTML(p, isOwner = false) {
     const imgContent = (p.images && p.images.length > 0)
         ? `<img src="${p.images[0]}" style="width:100%;height:100%;object-fit:cover;">`
         : categoryIcon(p.category);
@@ -527,8 +527,18 @@ function productCardHTML(p) {
                 <span class="product-price">${p.price}₪</span>
                 <span class="status-badge status-${p.status === 'active' ? 'active' : 'pending'}">${p.status === 'active' ? '✓ פעיל' : '⏳ ממתין'}</span>
             </div>
+            ${isOwner ? `<button class="btn btn-secondary btn-full" style="margin-top:10px;font-size:13px;color:var(--err);border-color:var(--err)" onclick="deleteProduct(${p.id})">🗑 מחיקת מוצר</button>` : ''}
         </div>
     </div>`;
+}
+
+async function deleteProduct(id) {
+    if (!confirm('למחוק את המוצר לצמיתות?')) return;
+    try {
+        await apiCall(`/products/${id}`, { method: 'DELETE' });
+        toast('המוצר נמחק', 'success');
+        renderChildDashboard();
+    } catch (err) { toast(err.message, 'error'); }
 }
 
 async function approveProduct(id) {
